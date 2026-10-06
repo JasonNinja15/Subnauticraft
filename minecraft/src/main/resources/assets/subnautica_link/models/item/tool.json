@@ -1,0 +1,128 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/echo_shard"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1
+      },
+      "model": "subnautica_link:item/tool_1"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2
+      },
+      "model": "subnautica_link:item/tool_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3
+      },
+      "model": "subnautica_link:item/tool_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 4
+      },
+      "model": "subnautica_link:item/tool_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 5
+      },
+      "model": "subnautica_link:item/tool_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 6
+      },
+      "model": "subnautica_link:item/tool_6"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7
+      },
+      "model": "subnautica_link:item/tool_7"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8
+      },
+      "model": "subnautica_link:item/tool_8"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 9
+      },
+      "model": "subnautica_link:item/tool_9"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 10
+      },
+      "model": "subnautica_link:item/tool_10"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 11
+      },
+      "model": "subnautica_link:item/tool_11"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 12
+      },
+      "model": "subnautica_link:item/tool_12"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 13
+      },
+      "model": "subnautica_link:item/tool_13"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 14
+      },
+      "model": "subnautica_link:item/tool_14"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 15
+      },
+      "model": "subnautica_link:item/tool_15"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 16
+      },
+      "model": "subnautica_link:item/tool_16"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 17
+      },
+      "model": "subnautica_link:item/tool_17"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 18
+      },
+      "model": "subnautica_link:item/tool_18"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 19
+      },
+      "model": "subnautica_link:item/tool_19"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 20
+      },
+      "model": "subnautica_link:item/tool_20"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+	"required": true,
+	"package": "com.example.subnauticalink.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"BoatEntityMixin",
+		"BucketItemMixin",
+		"EntityMixin",
+		"FallingBlockMixin",
+		"FishingBobberAccessor",
+		"FishingBobberMixin",
+		"FlowableFluidMixin",
+		"GuardianInvoker",
+		"ExplosionMixin",
+		"PersistentProjectileAccessor",
+		"PersistentProjectileMixin",
+		"PlayerEntityMixin",
+		"ProjectileInvoker",
+		"ServerPlayNetworkHandlerMixin",
+		"ServerPlayerEntityMixin",
+		"WorldMixin"
+	],
+	"client": [
+		"BipedEntityModelMixin",
+		"ClientPlayerEntityMixin",
+		"ClientWorldMixin",
+		"MouseAccessor",
+		"MouseMixin",
+		"GameRendererMixin",
+		"HeldItemRendererMixin",
+		"InGameOverlayRendererMixin",
+		"InGameHudMixin",
+		"InputUtilMixin",
+		"ParticleManagerMixin",
+		"ScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

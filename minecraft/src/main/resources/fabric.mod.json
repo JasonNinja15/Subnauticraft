@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "subnautica_link",
+	"version": "${version}",
+	"name": "Subnautica Link",
+	"description": "Links Minecraft to Subnautica: damage and death in one game happen in the other.",
+	"authors": [
+		"Jason"
+	],
+	"license": "All-Rights-Reserved",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.example.subnauticalink.SubnauticaLink"
+		],
+		"client": [
+			"com.example.subnauticalink.SubnauticaLinkClient"
+		]
+	},
+	"mixins": [
+		"subnautica_link.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

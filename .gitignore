@@ -1,0 +1,6 @@
+# Build output and logs (never upload these)
+build-log.txt
+**/build/
+**/bin/
+**/obj/
+.gradle/

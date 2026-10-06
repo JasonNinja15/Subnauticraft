@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/lantern",
+    "layer1": "minecraft:item/glowstone_dust"
+  }
+}

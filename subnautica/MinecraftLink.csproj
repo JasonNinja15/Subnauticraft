@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Subnautica runs on an older .NET, so the mod is built for that. -->
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>MinecraftLink</AssemblyName>
+    <RootNamespace>MinecraftLink</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Version>2.18.1</Version>
+
+    <!-- Where Subnautica is installed. Change this if the game ever moves. -->
+    <GameDir>C:\XboxGames\Subnautica\Content</GameDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lets the .NET SDK build for the older .NET without installing anything extra. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- The game's own code and the mod loader. The mod is compiled against these but does not
+       carry copies of them (Private = false). -->
+  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Harmony comes with the mod loader. It lets a mod step in front of the game's own methods. -->
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Unity's simple on-screen drawing, used to draw Minecraft's HUD over the game. -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Unity's particle effects (bubbles, smoke). Needed to borrow Subnautica's own. -->
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Unity's physics (bodies, collisions). Needed to stop the character's own momentum. -->
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameDir)\Subnautica_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- After a successful build, put the mod where the mod loader looks for it. -->
+  <Target Name="InstallIntoGame" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\MinecraftLink" />
+  </Target>
+
+</Project>
