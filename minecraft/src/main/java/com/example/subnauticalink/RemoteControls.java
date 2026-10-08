@@ -53,6 +53,13 @@ public final class RemoteControls {
 	/** Whether Shift was held in Subnautica at the last click on a Minecraft screen. */
 	public static volatile boolean shiftHeld;
 
+	/**
+	 * True while Subnautica is stopped (its menu is up, playing alone) and says so ("HOLD 1"):
+	 * the player is held exactly where they are until it starts again. Minecraft itself never
+	 * stops while linked, so without this the player went on moving through a frozen world.
+	 */
+	public static volatile boolean held;
+
 	public static volatile double pointerX = 0.5;
 	public static volatile double pointerY = 0.5;
 
@@ -218,6 +225,7 @@ public final class RemoteControls {
 		attackPresses.set(0);
 		usePresses.set(0);
 		shiftHeld = false;
+		held = false;
 		aim = null;
 		aimIsTerrain = false;
 		typing.clear();

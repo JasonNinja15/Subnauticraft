@@ -1,0 +1,15 @@
+Subnauticraft ships this copy of a Minecraft launcher setup so Minecraft can start next to
+Subnautica by itself. It doesn't include Minecraft: Prism Launcher downloads Minecraft, Java and
+Fabric Loader after you sign in with a Microsoft account that owns Minecraft: Java Edition.
+
+Prism Launcher {PRISM_VERSION} (this folder, the unmodified portable Windows build)
+  License: GNU General Public License v3.0 (LICENSE-PrismLauncher.txt)
+  Source:  https://github.com/PrismLauncher/PrismLauncher/tree/{PRISM_VERSION}
+
+Fabric API (instances/Subnauticraft/.minecraft/mods/fabric-api-*.jar)
+  By:      FabricMC
+  License: Apache License 2.0
+  Source:  https://github.com/FabricMC/fabric
+
+Subnauticraft (instances/Subnauticraft/.minecraft/mods/subnautica_link-*.jar)
+  License: MIT

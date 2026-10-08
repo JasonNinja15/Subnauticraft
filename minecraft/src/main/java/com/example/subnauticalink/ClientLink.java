@@ -251,6 +251,7 @@ public final class ClientLink {
 			ClientAvatars.reset();
 			ClientHeldLight.reset();
 			sentEdible = -1;
+			RemoteControls.held = false;
 			// Tell Subnautica where to find the picture of Minecraft's HUD.
 			toSubnautica("OVERLAY " + OverlayFile.path());
 			toServer("LINKED");
@@ -277,7 +278,7 @@ public final class ClientLink {
 		} else if (line.startsWith("AIM ")) {
 			RemoteControls.onAimLine(line.substring("AIM ".length()));
 		} else if (line.startsWith("CHAT ") || line.startsWith("TYPE ") || line.startsWith("KEY ")
-				|| line.equals("INVENTORY") || line.equals("SWAP") || line.startsWith("CLICK ") || line.startsWith("DROP ") || line.startsWith("WHEEL ")) {
+				|| line.equals("INVENTORY") || line.equals("SWAP") || line.startsWith("CLICK ") || line.startsWith("DROP ") || line.startsWith("WHEEL ") || line.startsWith("MENU ")) {
 			RemoteControls.addTyping(line);
 		} else if (line.startsWith("RIDE ")) {
 			// In one of Subnautica's vehicles. Where to sit is the server's business; how much
@@ -342,6 +343,10 @@ public final class ClientLink {
 		} else if (line.startsWith("BIOME ")) {
 			// Which of Subnautica's regions the player is in. Both this game and the server need to know.
 			WaterState.clientBiome = line.substring("BIOME ".length()).trim();
+			toServer(line);
+		} else if (line.startsWith("HOLD ")) {
+			// Subnautica has stopped (1) or started again (0). Both this game and the server need to know.
+			RemoteControls.held = line.substring("HOLD ".length()).trim().equals("1");
 			toServer(line);
 		} else if (line.startsWith("DRY ")) {
 			// Both this game and the server need to know.

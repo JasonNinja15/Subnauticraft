@@ -11,6 +11,7 @@
 		"FishingBobberMixin",
 		"FlowableFluidMixin",
 		"GuardianInvoker",
+		"LevelPropertiesMixin",
 		"ExplosionMixin",
 		"PersistentProjectileAccessor",
 		"PersistentProjectileMixin",
@@ -31,6 +32,8 @@
 		"InGameOverlayRendererMixin",
 		"InGameHudMixin",
 		"InputUtilMixin",
+		"IntegratedServerLoaderMixin",
+		"MinecraftClientMixin",
 		"ParticleManagerMixin",
 		"ScreenMixin"
 	],

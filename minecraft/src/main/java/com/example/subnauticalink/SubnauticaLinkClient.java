@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.DownloadingTerrainScreen;
+import net.minecraft.client.gui.screen.GameMenuScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
@@ -55,6 +57,9 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 		// This player's own connection to their own Subnautica.
 		ClientLink.init();
 		ClientDropsList.init();
+
+		// Opening a world by itself, when the bundled launcher asks for it.
+		AutoWorld.init();
 
 		// Block changes in this game's copy of the world, and chunks leaving it.
 		BlockSync.listener = ClientBlocks::onChanged;
@@ -114,6 +119,13 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 		}
 
 		this.setKeys(keys, RemoteControls.forward, RemoteControls.strafe, RemoteControls.jump, RemoteControls.sneak, RemoteControls.sprint);
+
+		// Subnautica is stopped: no keys are held, and no speed builds up (falling, sinking)
+		// to be let loose when it starts again. The move itself is stopped in EntityMixin.
+		if (RemoteControls.held) {
+			this.setKeys(keys, 0.0F, 0.0F, false, false, false);
+			client.player.setVelocity(Vec3d.ZERO);
+		}
 		this.holdingKeys = true;
 
 		client.player.setYaw(RemoteControls.yaw);
@@ -175,6 +187,12 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 		}
 
 		this.typeIntoMinecraft(client);
+
+		// A click passed on just now may have been on a button that leaves the world
+		// ("Save and Quit to Title"): there is no player any more, and nothing left to do.
+		if (client.player == null) {
+			return;
+		}
 
 		// Hotbar: number keys pick a slot, the scroll wheel moves along it. Minecraft tells
 		// the server about the change by itself.
@@ -243,6 +261,17 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 				if (client.currentScreen == null) {
 					client.setScreen(new InventoryScreen(client.player));
 				}
+			} else if (event.equals("MENU 1")) {
+				// Asked for from the panel beside Subnautica's own menu: Minecraft's game menu
+				// (the one Escape opens in Minecraft), unless some screen is already open.
+				if (client.currentScreen == null) {
+					client.setScreen(new GameMenuScreen(true));
+				}
+			} else if (event.equals("MENU 0")) {
+				// And away again, from wherever in its menus Minecraft has got to.
+				if (client.currentScreen != null) {
+					client.setScreen(null);
+				}
 			} else if (event.startsWith("DROP ")) {
 				// "Q" in Subnautica: drop the held item ("DROP 1" for the whole pile), exactly
 				// as Minecraft's own drop key does. Tool tokens can't be dropped: they stand
@@ -297,6 +326,11 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 					// A garbled line; ignore it.
 				}
 			}
+
+			// That may have left the world (a click on "Save and Quit to Title"): the rest is for a world that has gone.
+			if (client.player == null) {
+				break;
+			}
 		}
 	}
 
@@ -322,6 +356,28 @@ public final class SubnauticaLinkClient implements ClientModInitializer {
 			double[] at = pointerOf(parts);
 			double x = at[0] * client.getWindow().getScaledWidth();
 			double y = at[1] * client.getWindow().getScaledHeight();
+
+			// A menu (anything but a screen of item slots): the click goes in where a click of
+			// the real mouse would, at Minecraft's own mouse handling, which finds the pointer
+			// and the screen for itself. Other mods listen for clicks there rather than on the
+			// screen, and the buttons they add to Minecraft's menus only work if it comes this way.
+			if (!(client.currentScreen instanceof HandledScreen)) {
+				MouseAccessor mouse = (MouseAccessor) client.mouse;
+				mouse.subnauticaLink$setX(at[0] * client.getWindow().getWidth());
+				mouse.subnauticaLink$setY(at[1] * client.getWindow().getHeight());
+				mouse.subnauticaLink$onMouseButton(client.getWindow().getHandle(), button, down ? 1 : 0, 0);
+
+				// Held from here, so a slider can be pulled along (see placePointer).
+				if (down) {
+					heldButton = button;
+					dragX = x;
+					dragY = y;
+				} else if (heldButton == button) {
+					heldButton = -1;
+				}
+
+				return;
+			}
 
 			if (down) {
 				client.currentScreen.mouseClicked(x, y, button);

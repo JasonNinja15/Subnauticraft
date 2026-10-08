@@ -6,7 +6,7 @@
     <AssemblyName>MinecraftLink</AssemblyName>
     <RootNamespace>MinecraftLink</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>2.18.1</Version>
+    <Version>2.19.2</Version>
 
     <!-- Where Subnautica is installed. Change this if the game ever moves. -->
     <GameDir>C:\XboxGames\Subnautica\Content</GameDir>

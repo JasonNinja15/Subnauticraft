@@ -1,0 +1,73 @@
+{
+    "schemaVersion":  1,
+    "mode":  "installed",
+    "games":  [
+                  {
+                      "slug":  "subnautica",
+                      "role":  "primary"
+                  },
+                  {
+                      "slug":  "minecraft-java",
+                      "role":  "companion"
+                  }
+              ],
+    "components":  [
+                       {
+                           "id":  "main",
+                           "fileName":  "Subnauticraft-Subnautica-*.zip",
+                           "label":  "Subnautica plugin",
+                           "kind":  "main",
+                           "required":  true
+                       },
+                       {
+                           "id":  "minecraft",
+                           "fileName":  "Subnauticraft-Minecraft-*.zip",
+                           "label":  "Minecraft with Fabric (Prism Launcher)",
+                           "kind":  "extra",
+                           "required":  true
+                       }
+                   ],
+    "requirements":  [
+                         {
+                             "kind":  "loader",
+                             "id":  "bepinex-5"
+                         }
+                     ],
+    "mappings":  [
+                     {
+                         "component":  "main",
+                         "from":  "BepInEx/",
+                         "to":  "{game}/BepInEx"
+                     },
+                     {
+                         "component":  "minecraft",
+                         "from":  "",
+                         "to":  "{localappdata}/Subnauticraft"
+                     }
+                 ],
+    "launch":  {
+                   "kind":  "game"
+               },
+    "together":  [
+                     {
+                         "launch":  {
+                                        "kind":  "exe",
+                                        "path":  "{localappdata}/Subnauticraft/Prism/prismlauncher.exe",
+                                        "args":  [
+                                                     "--launch",
+                                                     "Subnauticraft"
+                                                 ]
+                                    },
+                         "startFirst":  true
+                     }
+                 ],
+    "runtimeData":  [
+                        "{localappdata}/Subnauticraft"
+                    ],
+    "multiplayer":  {
+                        "maxPlayers":  8
+                    },
+    "notes":  {
+                  "firstLaunch":  "The first time, a small Prism Launcher window asks you to sign in with the Microsoft account that owns Minecraft: Java Edition. Prism then downloads Minecraft, Fabric and Java (a few minutes, first time only) and opens a Survival world called Subnauticraft by itself. Load a Subnautica save and the two games link up; play in Subnautica\u0027s window with Minecraft running behind it."
+              }
+}

@@ -9,11 +9,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.example.subnauticalink.MovementBridge;
 import com.example.subnauticalink.RemoteCollision;
+import com.example.subnauticalink.RemoteControls;
 import com.example.subnauticalink.WaterState;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
@@ -86,7 +88,14 @@ public abstract class EntityMixin {
 	/** In water, stretch each tick's movement so swimming is as fast as in Subnautica. */
 	@ModifyVariable(method = "move", at = @At("HEAD"), argsOnly = true)
 	private Vec3d subnauticaLink$swimAtSubnauticaSpeed(Vec3d movement) {
-		return WaterState.scaleMovement((Entity) (Object) this, movement);
+		Entity self = (Entity) (Object) this;
+
+		// While Subnautica is stopped, the linked player doesn't move at all (see RemoteControls.held).
+		if (RemoteControls.held && self.getWorld().isClient && self instanceof PlayerEntity player && player.isMainPlayer() && RemoteControls.isActive()) {
+			return Vec3d.ZERO;
+		}
+
+		return WaterState.scaleMovement(self, movement);
 	}
 
 	@Inject(method = "isTouchingWater", at = @At("HEAD"), cancellable = true)

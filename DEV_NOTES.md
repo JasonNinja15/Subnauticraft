@@ -430,6 +430,40 @@ Known and left as they are:
 - Every Minecraft block is one object in Subnautica. Builds of a few thousand blocks in view
   will cost frame rate.
 
+### 2.18.2
+
+- **No "experimental settings" warning.** Minecraft stopped at that screen whenever a world
+  was opened or made with the mod installed, because the mod adds a dimension. Worlds now
+  always count as "stable" (`LevelPropertiesMixin`, `IntegratedServerLoaderMixin`), so a
+  launcher can open a world with nobody there to press the button. This is so for every world
+  opened with the mod installed. The Subnautica half is unchanged apart from its version.
+
+### 2.19.0
+
+- **Both games' menus.** With Subnautica's own menu up (Escape), a small panel at the left of
+  the screen has two buttons, "Subnautica" and "Minecraft"; the one showing is greyed out.
+  "Minecraft" closes Subnautica's menu and has Minecraft open its game menu ("MENU 1"), which
+  is drawn and clicked on like the inventory is. "Subnautica" has Minecraft close whatever it
+  has open ("MENU 0") and opens Subnautica's menu again once it has. Escape closes either.
+  See `DrawMenuSwap` in the plugin.
+- **Buttons other mods add to Minecraft's menus work** (Essential's, for hosting and inviting).
+  A click on a menu now goes in through Minecraft's own mouse handling (`Mouse.onMouseButton`)
+  instead of straight to the screen, because that is where other mods listen. Screens of item
+  slots (the inventory, chests) are clicked as before.
+- **No Minecraft screen pauses the game while linked** (`ScreenMixin`, `MinecraftClientMixin`).
+  If Subnautica's menu had the game stopped, it stays stopped under Minecraft's menu.
+
+### 2.19.1
+
+- **Clicking beside Subnautica's menu no longer closes it** while linked (`KeepGameMenu`).
+  Subnautica closes its menu on a press on empty screen, and this mod's panel beside the menu
+  counted as that. The menu's own buttons and Escape close it as before.
+- **Held still while Subnautica is stopped.** Minecraft never stops while linked, so with
+  Subnautica's menu up (playing alone) the player could still walk about a frozen world.
+  Subnautica now says when it is stopped ("HOLD 1" / "HOLD 0"); Minecraft's player doesn't
+  move meanwhile, and with nobody else about its mobs stop too. With Subnautica's menu up
+  the movement keys are not passed on either way.
+
 ### Inventory keys
 
 - Shift-click moves a whole pile across the inventory.

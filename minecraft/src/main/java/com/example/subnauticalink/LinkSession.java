@@ -69,6 +69,9 @@ public final class LinkSession {
 	/** True when this player's Subnautica says they are aboard the Cyclops, where Minecraft's mobs can't get at them. */
 	public volatile boolean aboard;
 
+	/** True while this player's Subnautica is stopped (its menu is up, playing alone): the player is held still, and Minecraft's mobs leave them be. */
+	public volatile boolean held;
+
 	/** Whether this player currently counts as in the water (see WaterState). */
 	public boolean wet;
 
@@ -126,6 +129,7 @@ public final class LinkSession {
 			this.sharedFraction = -1.0F;
 			this.sharedFoodLevel = -1;
 			this.equippedTool = null;
+			this.held = false;
 			this.sentCheats = -1;
 		} else if (line.equals("UNLINKED")) {
 			this.linked = false;
@@ -134,6 +138,7 @@ public final class LinkSession {
 			this.oxygenFraction = -1.0F;
 			this.dry = false;
 			this.aboard = false;
+			this.held = false;
 			this.poseHeight = 10.0F;
 			Sessions.note("@LIGHT " + player.getId() + " 0");
 			Riding.end(player);
@@ -167,6 +172,8 @@ public final class LinkSession {
 			}
 		} else if (line.equals("SWING")) {
 			this.attack(server, player);
+		} else if (line.startsWith("HOLD ")) {
+			this.held = line.substring("HOLD ".length()).trim().equals("1");
 		} else if (line.startsWith("DRY ")) {
 			this.dry = line.substring("DRY ".length()).trim().equals("1");
 		} else if (line.startsWith("MYLIGHT ")) {

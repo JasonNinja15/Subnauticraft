@@ -250,7 +250,8 @@ public final class VoidMobs {
 
 		if (world != null) {
 			for (ServerPlayerEntity player : world.getPlayers()) {
-				if (Sessions.isActive(player)) {
+				// (Not one whose Subnautica is stopped: with nobody else about, the mobs stop too.)
+				if (Sessions.isActive(player) && !Sessions.get(player).held) {
 					players.add(player);
 				}
 			}

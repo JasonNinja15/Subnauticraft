@@ -4,3 +4,7 @@ build-log.txt
 **/bin/
 **/obj/
 .gradle/
+
+# Packaging downloads and output
+.tools/
+dist/

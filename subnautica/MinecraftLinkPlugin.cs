@@ -27,7 +27,7 @@ namespace MinecraftLink
     /// touched from the main thread, so that thread just drops lines into a queue, and Update()
     /// (which Unity calls once per frame on the main thread) picks them up.
     /// </summary>
-    [BepInPlugin("com.example.minecraftlink", "Minecraft Link", "2.18.1")]
+    [BepInPlugin("com.example.minecraftlink", "Minecraft Link", "2.19.2")]
     public class MinecraftLinkPlugin : BaseUnityPlugin
     {
         /// <summary>The port both mods use. It must match the number in the Minecraft mod.</summary>
@@ -150,6 +150,7 @@ namespace MinecraftLink
         private const int ControlKey = 0x11;
         private const int LeftMouseButton = 0x01;
         private const int RightMouseButton = 0x02;
+        private const int MiddleMouseButton = 0x04;
 
         /// <summary>The "1" key. The other number keys follow it in order.</summary>
         private const int FirstNumberKey = 0x31;
@@ -291,6 +292,16 @@ namespace MinecraftLink
         private float sentPointerX = -1f;
         private float sentPointerY = -1f;
         private readonly bool[] sentButtons = new bool[2];
+
+        /// <summary>
+        /// A panel this mod draws over a Minecraft screen (in pixels from the window's top left
+        /// corner), and whether it is showing. Mouse presses on it are not passed to Minecraft.
+        /// </summary>
+        private Rect menuPanel;
+        private bool menuPanelShown;
+
+        /// <summary>The mouse buttons whose current press began on that panel.</summary>
+        private readonly bool[] panelButtons = new bool[2];
 
         private PropertyInfo lockCursorSetting;
         private bool lockCursorLookupDone;
@@ -836,6 +847,12 @@ namespace MinecraftLink
             // In case a camera moved for an outside view never finished drawing.
             RestoreCamera();
 
+            // Swapping between the two games' menus (see DrawMenuSwap).
+            TendMenuSwap();
+
+            // While Subnautica is stopped, Minecraft's player is held still too.
+            TendHold();
+
             // 1. Deal with whatever Minecraft has sent.
             HandleIncoming(player);
 
@@ -1157,7 +1174,8 @@ namespace MinecraftLink
                 // x = strafe (right is +), y = up/down (jump is +), z = forward/back (forward is +).
                 // Nothing while Subnautica's command console is being typed into.
                 // Nor in a vehicle: there the movement keys are the vehicle's.
-                Vector3 move = consoleOpen || riding ? Vector3.zero : GameInput.GetMoveDirection();
+                // Nor with Subnautica's own menu up.
+                Vector3 move = consoleOpen || riding || SubnauticaMenuOpen() ? Vector3.zero : GameInput.GetMoveDirection();
 
                 // Minecraft's keys: Control sprints, Shift sneaks (and sinks, in water). Only while
                 // actually playing: not with a menu or the PDA open, or another window in front.
@@ -1825,6 +1843,9 @@ namespace MinecraftLink
                     // The screen closed: typing is over, and the pointer goes back to steering.
                     typing = false;
                     FreePointer(false);
+
+                    // If it was Minecraft's menu, and closed to make way for Subnautica's, that opens now.
+                    AfterMinecraftMenu();
                 }
 
                 // A button already held as the screen opens (the right button that opened a
@@ -1978,6 +1999,7 @@ namespace MinecraftLink
                 // Send the oxygen level and water details afresh; Minecraft sends its health and hunger.
                 lastOxygen = -1f;
                 lastDry = -1;
+                sentHold = -1;
                 lastAboard = -1;
                 lastNight = -1;
                 lastBiome = null;
@@ -2023,6 +2045,8 @@ namespace MinecraftLink
                     FreePointer(false);
                 }
 
+                minecraftMenuOpen = false;
+                subnauticaMenuNext = false;
                 CloseOverlay();
                 RemoveAllBlocks();
                 Logger.LogInfo("Lost the connection to Minecraft");
@@ -2845,6 +2869,26 @@ namespace MinecraftLink
             {
                 bool down = KeyHeld(button == 0 ? LeftMouseButton : RightMouseButton);
 
+                // A press on a panel of this mod's own drawn over the screen is that panel's, not
+                // Minecraft's: neither it nor the letting go that follows is passed on.
+                if (panelButtons[button])
+                {
+                    if (!down)
+                    {
+                        panelButtons[button] = false;
+                        sentButtons[button] = false;
+                    }
+
+                    continue;
+                }
+
+                if (down && !sentButtons[button] && menuPanelShown && menuPanel.Contains(new Vector2(point.x, point.y)))
+                {
+                    panelButtons[button] = true;
+                    sentButtons[button] = true;
+                    continue;
+                }
+
                 if (down != sentButtons[button])
                 {
                     sentButtons[button] = down;
@@ -2974,6 +3018,296 @@ namespace MinecraftLink
             if (linked && atFabricator)
             {
                 DrawTrades();
+            }
+
+            // With either game's menu up: the panel that swaps between the two.
+            DrawMenuSwap();
+        }
+
+        // ---- Swapping between the two games' menus -----------------------------------------------
+        //
+        // Escape opens Subnautica's own menu. While it is open, a small panel at the left of the
+        // screen offers Minecraft's menu instead (for its options, and for what other Minecraft
+        // mods put there, such as inviting friends to a hosted world); and while Minecraft's is
+        // open, the same panel offers Subnautica's back.
+        //
+        // Going to Minecraft's: Subnautica's menu is closed and Minecraft is asked to open its
+        // own ("MENU 1"), which arrives as a Minecraft screen like any other ("MCSCREEN 1"),
+        // drawn in Minecraft's picture and clicked on through "POINTER" and "CLICK".
+        // Going back: Minecraft is asked to close whatever it has open ("MENU 0"), and once it
+        // says it has ("MCSCREEN 0"), Subnautica's menu is opened again.
+        //
+        // If Subnautica's menu had stopped the game (it does when playing alone), the game is
+        // kept stopped under Minecraft's menu too, and let go when that menu is closed.
+
+        /// <summary>True from asking Minecraft for its menu until that screen closes.</summary>
+        private bool minecraftMenuOpen;
+
+        /// <summary>True from asking Minecraft to close its menu until it has: Subnautica's is opened then.</summary>
+        private bool subnauticaMenuNext;
+
+        /// <summary>When Minecraft was last asked to open or close its menu. An ask it never acts on is forgotten after a moment.</summary>
+        private float menuAskedAt;
+
+        /// <summary>Whether Subnautica's menu had the game stopped when Minecraft's was asked for.</summary>
+        private bool menuHoldsTime;
+
+        /// <summary>True while this mod is the one keeping the game stopped.</summary>
+        private bool menuStoppedTime;
+
+        private GUIStyle menuBox;
+        private GUIStyle menuButton;
+        private int menuStyleSize;
+
+        /// <summary>Whether Subnautica's own in-game menu (the one Escape opens) is up.</summary>
+        private static bool SubnauticaMenuOpen()
+        {
+            try
+            {
+                IngameMenu menu = IngameMenu.main;
+                return menu != null && menu.selected;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Every frame: forget asks Minecraft never acted on, and keep the game stopped under Minecraft's menu if it was stopped under Subnautica's.</summary>
+        private void TendMenuSwap()
+        {
+            if (!linked)
+            {
+                minecraftMenuOpen = false;
+                subnauticaMenuNext = false;
+            }
+
+            // Asked for Minecraft's menu and no screen came (Minecraft had no player just then, say).
+            if (minecraftMenuOpen && !screenOpen && Time.unscaledTime - menuAskedAt > 1.5f)
+            {
+                minecraftMenuOpen = false;
+            }
+
+            // Asked Minecraft to close its menu and it never said it had.
+            if (subnauticaMenuNext && Time.unscaledTime - menuAskedAt > 1.5f)
+            {
+                subnauticaMenuNext = false;
+            }
+
+            // Only while Minecraft's screen is really up. (Subnautica remembers how fast time was
+            // going whenever something of its own stops it, to put it back afterwards; so it
+            // must never find the game stopped by this mod at such a moment. With a Minecraft
+            // screen open, Subnautica's menu key is switched off and nothing of its own can.)
+            bool wanted = menuHoldsTime && (minecraftMenuOpen || subnauticaMenuNext);
+
+            if (wanted && screenOpen)
+            {
+                if (Time.timeScale != 0f)
+                {
+                    Time.timeScale = 0f;
+                    menuStoppedTime = true;
+                }
+            }
+            else
+            {
+                if (!wanted)
+                {
+                    menuHoldsTime = false;
+                }
+
+                if (menuStoppedTime)
+                {
+                    menuStoppedTime = false;
+
+                    // Let the game go again, unless Subnautica's own menu is up and has it stopped itself.
+                    if (Time.timeScale == 0f && !SubnauticaMenuOpen())
+                    {
+                        Time.timeScale = 1f;
+                    }
+                }
+            }
+        }
+
+        /// <summary>What Minecraft was last told about holding its player still: 1 yes, 0 no, -1 nothing yet.</summary>
+        private int sentHold = -1;
+
+        /// <summary>
+        /// Every frame: while Subnautica is stopped (its menu is up, playing alone; or this mod is
+        /// keeping it stopped under Minecraft's menu), Minecraft is told to hold its player
+        /// where they are ("HOLD 1"), and to let them go when it starts again ("HOLD 0").
+        /// Otherwise Minecraft, which never stops, went on moving them through a frozen world.
+        /// </summary>
+        private void TendHold()
+        {
+            if (!linked)
+            {
+                sentHold = -1;
+                return;
+            }
+
+            int hold = Time.timeScale == 0f ? 1 : 0;
+
+            if (hold != sentHold)
+            {
+                sentHold = hold;
+                Send("HOLD " + hold);
+            }
+        }
+
+        /// <summary>
+        /// Slotted in front of the part of Subnautica that closes whatever menu is up when the
+        /// mouse is pressed on empty screen beside it. With its game menu up while linked, that
+        /// press does nothing (returning false skips the closing): the panel this mod draws beside
+        /// the menu is "empty screen" to Subnautica, and clicking it closed the menu.
+        /// The menu's own buttons, and Escape, close it as before.
+        /// </summary>
+        public static bool KeepGameMenu(uGUI_InputGroup __0)
+        {
+            // Only a change to "no menu at all", made while a mouse button is going down.
+            if (__0 != null || !linkedNow || !(KeyHeld(LeftMouseButton) || KeyHeld(RightMouseButton) || KeyHeld(MiddleMouseButton)))
+            {
+                return true;
+            }
+
+            return !SubnauticaMenuOpen();
+        }
+
+        /// <summary>The panel at the left of the screen, shown while either game's menu is up.</summary>
+        private void DrawMenuSwap()
+        {
+            menuPanelShown = false;
+
+            if (!linked)
+            {
+                return;
+            }
+
+            bool subnauticas = SubnauticaMenuOpen();
+            bool minecrafts = screenOpen && minecraftMenuOpen && !subnauticaMenuNext;
+
+            if (!subnauticas && !minecrafts)
+            {
+                return;
+            }
+
+            // Sized for a 1080-line screen and scaled to whatever the screen is.
+            float scale = Screen.height / 1080f;
+            int textSize = Mathf.Max(10, Mathf.RoundToInt(17f * scale));
+
+            if (menuBox == null || menuStyleSize != textSize)
+            {
+                menuStyleSize = textSize;
+                menuBox = new GUIStyle(GUI.skin.box) { fontSize = textSize, alignment = TextAnchor.UpperCenter };
+                menuButton = new GUIStyle(GUI.skin.button) { fontSize = textSize, alignment = TextAnchor.MiddleCenter };
+            }
+
+            float width = 230f * scale;
+            float row = 44f * scale;
+            float gap = 8f * scale;
+            float height = 40f * scale + 2f * (row + gap);
+            Rect panel = new Rect(30f * scale, (Screen.height - height) / 2f, width, height);
+
+            // Clicks here are this panel's, not for the Minecraft screen underneath (see SendPointer).
+            menuPanel = panel;
+            menuPanelShown = true;
+
+            GUI.Box(panel, "Menu", menuBox);
+
+            Rect first = new Rect(panel.x + gap, panel.y + 40f * scale, panel.width - 2f * gap, row);
+            Rect second = new Rect(first.x, first.y + row + gap, first.width, row);
+
+            // The one that is showing is greyed out; the other is the one to click.
+            GUI.enabled = !subnauticas;
+
+            if (GUI.Button(first, "Subnautica", menuButton))
+            {
+                ShowSubnauticaMenu();
+            }
+
+            GUI.enabled = !minecrafts;
+
+            if (GUI.Button(second, "Minecraft", menuButton))
+            {
+                ShowMinecraftMenu();
+            }
+
+            GUI.enabled = true;
+        }
+
+        /// <summary>From Subnautica's menu to Minecraft's.</summary>
+        private void ShowMinecraftMenu()
+        {
+            try
+            {
+                IngameMenu menu = IngameMenu.main;
+
+                if (menu == null || !menu.CanClose())
+                {
+                    return;
+                }
+
+                bool stopped = Time.timeScale == 0f;
+                menu.Close();
+
+                // It didn't close (something else of Subnautica's had hold of the screen): leave things as they are.
+                if (menu.selected)
+                {
+                    return;
+                }
+
+                menuHoldsTime = stopped;
+                minecraftMenuOpen = true;
+                subnauticaMenuNext = false;
+                menuAskedAt = Time.unscaledTime;
+                Send("MENU 1");
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning("Could not swap to Minecraft's menu: " + e.Message);
+            }
+        }
+
+        /// <summary>From Minecraft's menu back to Subnautica's: asked for here, done when Minecraft says its screen has closed.</summary>
+        private void ShowSubnauticaMenu()
+        {
+            subnauticaMenuNext = true;
+            menuAskedAt = Time.unscaledTime;
+            Send("MENU 0");
+        }
+
+        /// <summary>Minecraft's menu has closed. Opens Subnautica's, if that is what it was closed for.</summary>
+        private void AfterMinecraftMenu()
+        {
+            bool next = subnauticaMenuNext;
+            minecraftMenuOpen = false;
+            subnauticaMenuNext = false;
+
+            if (!next)
+            {
+                return;
+            }
+
+            try
+            {
+                IngameMenu menu = IngameMenu.main;
+
+                if (menu != null && !SubnauticaMenuOpen())
+                {
+                    // Time goes again first: Subnautica's menu stops it for itself as it opens,
+                    // and puts back whatever it found, which must not be this mod's stop.
+                    if (menuStoppedTime)
+                    {
+                        menuStoppedTime = false;
+                        Time.timeScale = 1f;
+                    }
+
+                    menuHoldsTime = false;
+                    menu.Open();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning("Could not open Subnautica's menu again: " + e.Message);
             }
         }
 
@@ -4111,6 +4445,28 @@ namespace MinecraftLink
                 }
 
                 Logger.LogInfo("Keeping the Fabricator's menu open through clicks on the Minecraft panel (" + kept + " checks)");
+
+                // And its game menu when you click beside it (see KeepGameMenu).
+                HarmonyMethod keepGameMenu = new HarmonyMethod(typeof(MinecraftLinkPlugin).GetMethod("KeepGameMenu", BindingFlags.Static | BindingFlags.Public));
+                Type inputModule = typeof(Player).Assembly.GetType("FPSInputModule");
+                int keptMenu = 0;
+
+                if (inputModule != null)
+                {
+                    foreach (MethodInfo method in inputModule.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                    {
+                        if (method.Name == "ChangeGroup")
+                        {
+                            harmony.Patch(method, keepGameMenu);
+                            keptMenu++;
+                        }
+                    }
+                }
+
+                if (keptMenu == 0)
+                {
+                    Logger.LogWarning("Could not find how Subnautica closes a menu on a click beside it, so its game menu still closes that way");
+                }
             }
             catch (Exception e)
             {

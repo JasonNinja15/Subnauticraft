@@ -28,4 +28,16 @@ public abstract class ScreenMixin {
 			cir.setReturnValue(true);
 		}
 	}
+
+	/**
+	 * No screen stops the game while linked. Minecraft's game menu (and its options, and
+	 * anything else that asks to) pauses a world played alone; with Subnautica in front that
+	 * would stop the link's own traffic, and Subnautica has its own say over pausing.
+	 */
+	@Inject(method = "shouldPause", at = @At("HEAD"), cancellable = true)
+	private void subnauticaLink$noPauseWhileLinked(CallbackInfoReturnable<Boolean> cir) {
+		if (OverlayShare.isActive()) {
+			cir.setReturnValue(false);
+		}
+	}
 }

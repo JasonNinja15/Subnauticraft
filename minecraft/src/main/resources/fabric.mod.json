@@ -5,9 +5,9 @@
 	"name": "Subnautica Link",
 	"description": "Links Minecraft to Subnautica: damage and death in one game happen in the other.",
 	"authors": [
-		"Jason"
+		"JasonNinja15"
 	],
-	"license": "All-Rights-Reserved",
+	"license": "MIT",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
